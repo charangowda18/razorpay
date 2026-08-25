@@ -117,8 +117,8 @@ async def health_check():
 async def startup():
     """Initialize database on startup."""
     init_database()
-    print(f"\n🚀 {settings.APP_NAME} v{settings.APP_VERSION}")
-    print(f"📊 Dashboard: http://localhost:8000")
-    print(f"📖 API Docs:  http://localhost:8000/docs")
-    print(f"🤖 AI Agent:  {'✅ Connected' if settings.GEMINI_API_KEY else '❌ No API key'}")
+    print(f"\n* {settings.APP_NAME} v{settings.APP_VERSION}")
+    print(f"  Dashboard: http://localhost:8000")
+    print(f"  API Docs:  http://localhost:8000/docs")
+    print(f"  AI Agent:  {'Connected' if settings.GEMINI_API_KEY else 'No API key'}")
     print()

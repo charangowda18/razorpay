@@ -318,6 +318,7 @@ def batch_evaluate(limit: int = 20) -> dict:
     results = []
     for txn in transactions:
         evaluation = evaluate_transaction(txn)
+        retry_score = evaluation["retry_score"]
         results.append({
             "transaction_id": txn["id"],
             "amount": txn["amount"],
@@ -325,19 +326,20 @@ def batch_evaluate(limit: int = 20) -> dict:
             "bank_name": txn["bank_name"],
             "payment_method": txn["payment_method"],
             "created_at": txn["created_at"],
-            "retry_score": evaluation["retry_score"],
+            "retry_score": retry_score,
+            "expected_recovery_value": round(txn["amount"] * retry_score, 2),
             "confidence": evaluation["confidence"],
             "recommended_action": evaluation["recommended_action"],
             "reason": evaluation["reason"],
         })
 
-    # Sort by retry_score descending (highest recovery chance first)
-    results.sort(key=lambda x: x["retry_score"], reverse=True)
+    # Sort by expected_recovery_value descending (highest revenue impact first)
+    results.sort(key=lambda x: x["expected_recovery_value"], reverse=True)
 
     # Return only the requested number of top opportunities
     results = results[:limit]
 
-    total_recoverable = sum(r["amount"] for r in results if r["retry_score"] >= 0.4)
+    total_recoverable = sum(r["expected_recovery_value"] for r in results)
 
     return {
         "opportunities": results,

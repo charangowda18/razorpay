@@ -131,7 +131,7 @@ def init_database():
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_ai_insights_merchant ON ai_insights(merchant_id)")
 
         conn.commit()
-        print("✅ Database initialized successfully.")
+        print("[SUCCESS] Database initialized successfully.")
 
 
 if __name__ == "__main__":

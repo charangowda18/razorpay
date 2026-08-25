@@ -307,42 +307,48 @@ function renderOpportunities(opportunities) {
 
     grid.innerHTML = opportunities.map(opp => {
         const scoreClass = opp.retry_score >= 0.7 ? 'high' : opp.retry_score >= 0.4 ? 'medium' : 'low';
-        const badgeClass = opp.confidence === 'high' ? 'badge-success' :
-                          opp.confidence === 'medium' ? 'badge-pending' : 'badge-failed';
+        const badgeClass = opp.retry_score >= 0.7 ? 'badge-success' :
+                          opp.retry_score >= 0.4 ? 'badge-pending' : 'badge-failed';
+        
+        const expectedRecovery = Number(opp.expected_recovery_value || (opp.amount * opp.retry_score)).toLocaleString('en-IN', { maximumFractionDigits: 0 });
+        const originalAmount = Number(opp.amount).toLocaleString('en-IN', { maximumFractionDigits: 0 });
+        
+        // Map recommended actions to friendly labels
+        const actionLabels = {
+            'smart_retry': '🤖 Auto Smart Retry',
+            'notification': '✉️ Send Payment Link',
+            'manual_review': '🔍 Manual Review',
+            'payment_link': '💳 Update Card Link'
+        };
+        const actionLabel = actionLabels[opp.recommended_action] || opp.recommended_action;
 
         return `
             <div class="opportunity-card" onclick="handleRecovery('${opp.transaction_id}')">
                 <div class="opp-header">
-                    <span class="opp-amount">₹${Number(opp.amount).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
-                    <span class="badge ${badgeClass}">${opp.confidence} confidence</span>
+                    <div>
+                        <span class="opp-amount" style="color: var(--accent-purple); font-size: 1.3rem;">₹${expectedRecovery}</span>
+                        <span style="display:block; font-size: 0.72rem; color: var(--text-muted); margin-top: 2px;">Expected Recovery</span>
+                    </div>
+                    <span class="badge ${badgeClass}">${(opp.retry_score * 100).toFixed(0)}% Probability</span>
                 </div>
-                <div class="opp-details">
+                <div class="opp-details" style="margin-top: 15px;">
                     <div class="opp-detail">
-                        <span class="opp-detail-label">Failure Reason</span>
-                        <span class="opp-detail-value">${formatFailureReason(opp.failure_reason)}</span>
+                        <span class="opp-detail-label">Original Amount</span>
+                        <span class="opp-detail-value" style="font-weight: 500;">₹${originalAmount}</span>
                     </div>
                     <div class="opp-detail">
-                        <span class="opp-detail-label">Payment Method</span>
-                        <span class="opp-detail-value">${opp.payment_method?.toUpperCase()}</span>
+                        <span class="opp-detail-label">Action</span>
+                        <span class="opp-detail-value highlight purple" style="font-weight: 600;">${actionLabel}</span>
                     </div>
                     <div class="opp-detail">
-                        <span class="opp-detail-label">Bank</span>
-                        <span class="opp-detail-value">${opp.bank_name}</span>
-                    </div>
-                    <div class="opp-detail">
-                        <span class="opp-detail-label">AI Retry Score</span>
-                        <span class="opp-detail-value">
-                            <div class="score-bar-container">
-                                <div class="score-bar">
-                                    <div class="score-bar-fill ${scoreClass}" style="width: ${opp.retry_score * 100}%"></div>
-                                </div>
-                                <span class="score-value" style="color: var(--${scoreClass === 'high' ? 'success' : scoreClass === 'medium' ? 'warning' : 'danger'})">${(opp.retry_score * 100).toFixed(0)}%</span>
-                            </div>
-                        </span>
+                        <span class="opp-detail-label">Gateway & Method</span>
+                        <span class="opp-detail-value">${opp.bank_name} • ${opp.payment_method?.toUpperCase()}</span>
                     </div>
                 </div>
-                <div class="opp-reason">${opp.reason}</div>
-                <button class="btn btn-primary" style="width: 100%;">
+                <div class="opp-reason" style="margin-top: 12px; font-size: 0.78rem; line-height: 1.4; color: var(--text-secondary); background: rgba(255,255,255,0.02); padding: 8px 10px; border-radius: 6px;">
+                    <strong>Why:</strong> ${opp.reason}
+                </div>
+                <button class="btn btn-primary" style="width: 100%; margin-top: 12px;">
                     🔄 Trigger Recovery
                 </button>
             </div>
