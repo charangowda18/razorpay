@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AI-powered payment recovery system that detects failed payments and uses intelligent retries to recover lost merchant revenue.">
+    <title>AI Revenue Recovery | Smart Payment Recovery Dashboard</title>
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="/static/css/styles.css">
+
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- ============ HEADER ============ -->
+        <header class="header" id="app-header">
+            <div class="header-left">
+                <div class="logo">⚡</div>
+                <div class="header-title">
+                    <h1>AI Revenue Recovery</h1>
+                    <p>Intelligent Payment Recovery System</p>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="header-badge">
+                    <span class="dot"></span>
+                    System Active
+                </div>
+                <div class="ai-status" id="ai-status">🤖 AI: Checking...</div>
+            </div>
+        </header>
+
+        <!-- ============ NAVIGATION TABS ============ -->
+        <nav class="nav-tabs" id="nav-tabs">
+            <button class="nav-tab active" data-tab="overview" id="tab-overview">
+                <span class="tab-icon">📊</span> Overview
+            </button>
+            <button class="nav-tab" data-tab="transactions" id="tab-transactions">
+                <span class="tab-icon">💳</span> Failed Payments
+            </button>
+            <button class="nav-tab" data-tab="recovery" id="tab-recovery">
+                <span class="tab-icon">🔄</span> Recovery
+            </button>
+            <button class="nav-tab" data-tab="insights" id="tab-insights">
+                <span class="tab-icon">🧠</span> AI Insights
+            </button>
+            <button class="nav-tab" data-tab="merchants" id="tab-merchants">
+                <span class="tab-icon">🏪</span> Merchants
+            </button>
+        </nav>
+
+        <!-- ============ TAB: OVERVIEW ============ -->
+        <div class="tab-content active" id="content-overview">
+            <!-- Stats Cards -->
+            <div class="stats-grid" id="stats-grid">
+                <div class="stat-card success" id="card-success">
+                    <div class="stat-card-header">
+                        <span class="stat-card-label">Successful Revenue</span>
+                        <div class="stat-card-icon">✅</div>
+                    </div>
+                    <div class="stat-card-value" id="stat-success-amount"><span class="loading-dots">Loading</span></div>
+                    <div class="stat-card-sub">
+                        <span class="highlight green" id="stat-success-count">—</span> transactions
+                    </div>
+                </div>
+
+                <div class="stat-card danger" id="card-failed">
+                    <div class="stat-card-header">
+                        <span class="stat-card-label">Revenue Lost</span>
+                        <div class="stat-card-icon">❌</div>
+                    </div>
+                    <div class="stat-card-value" id="stat-failed-amount"><span class="loading-dots">Loading</span></div>
+                    <div class="stat-card-sub">
+                        <span class="highlight red" id="stat-failed-count">—</span> failed payments
+                    </div>
+                </div>
+
+                <div class="stat-card recovered" id="card-recovered">
+                    <div class="stat-card-header">
+                        <span class="stat-card-label">Revenue Recovered</span>
+                        <div class="stat-card-icon">🔄</div>
+                    </div>
+                    <div class="stat-card-value" id="stat-recovered-amount"><span class="loading-dots">Loading</span></div>
+                    <div class="stat-card-sub">
+                        <span class="highlight purple" id="stat-recovery-rate">0%</span> of failed txns recovered
+                        <span id="stat-recovery-counts" style="display:block;font-size:0.72rem;margin-top:2px;color:var(--text-muted);"></span>
+                    </div>
+                </div>
+
+                <div class="stat-card potential" id="card-potential">
+                    <div class="stat-card-header">
+                        <span class="stat-card-label">Recovery Potential</span>
+                        <div class="stat-card-icon">💰</div>
+                    </div>
+                    <div class="stat-card-value" id="stat-potential-amount"><span class="loading-dots">Loading</span></div>
+                    <div class="stat-card-sub">
+                        <span class="highlight yellow">AI-estimated</span> recoverable revenue
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="charts-grid">
+                <div class="chart-card" id="chart-card-trend">
+                    <div class="chart-card-title">
+                        <span class="chart-icon">📈</span> Daily Recovery Trend
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="chart-daily-trend"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card" id="chart-card-failures">
+                    <div class="chart-card-title">
+                        <span class="chart-icon">🔍</span> Failure Reasons Breakdown
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="chart-failure-reasons"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card" id="chart-card-banks">
+                    <div class="chart-card-title">
+                        <span class="chart-icon">🏦</span> Bank-wise Failure Rate
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="chart-banks"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card" id="chart-card-hourly">
+                    <div class="chart-card-title">
+                        <span class="chart-icon">🕐</span> Hourly Failure Pattern
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="chart-hourly"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============ TAB: FAILED PAYMENTS ============ -->
+        <div class="tab-content" id="content-transactions">
+            <div class="table-card">
+                <div class="table-header">
+                    <div class="table-title">💳 Failed Payment Transactions</div>
+                    <div class="table-filters">
+                        <select class="filter-select" id="filter-failure-reason">
+                            <option value="">All Failure Reasons</option>
+                            <option value="insufficient_funds">Insufficient Funds</option>
+                            <option value="bank_server_down">Bank Server Down</option>
+                            <option value="network_timeout">Network Timeout</option>
+                            <option value="card_declined">Card Declined</option>
+                            <option value="authentication_failed">Auth Failed</option>
+                            <option value="card_expired">Card Expired</option>
+                            <option value="daily_limit_exceeded">Daily Limit</option>
+                        </select>
+                        <select class="filter-select" id="filter-payment-method">
+                            <option value="">All Methods</option>
+                            <option value="upi">UPI</option>
+                            <option value="card">Card</option>
+                            <option value="netbanking">Net Banking</option>
+                            <option value="wallet">Wallet</option>
+                        </select>
+                        <select class="filter-select" id="filter-bank">
+                            <option value="">All Banks</option>
+                            <option value="SBI">SBI</option>
+                            <option value="HDFC">HDFC</option>
+                            <option value="ICICI">ICICI</option>
+                            <option value="Axis">Axis</option>
+                            <option value="Kotak">Kotak</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table class="data-table" id="transactions-table">
+                        <thead>
+                            <tr>
+                                <th>Transaction ID</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Failure Reason</th>
+                                <th>Method</th>
+                                <th>Bank</th>
+                                <th>Retry Score</th>
+                                <th>Date</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transactions-tbody">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination" id="transactions-pagination">
+                    <button id="btn-prev-page" disabled>← Previous</button>
+                    <span class="page-info" id="page-info">Page 1</span>
+                    <button id="btn-next-page">Next →</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============ TAB: RECOVERY ============ -->
+        <div class="tab-content" id="content-recovery">
+            <div class="stats-grid" style="margin-bottom: 24px;">
+                <div class="stat-card recovered">
+                    <div class="stat-card-header">
+                        <span class="stat-card-label">Top Opportunities</span>
+                        <div class="stat-card-icon">🎯</div>
+                    </div>
+                    <div class="stat-card-value" id="opp-count">0</div>
+                    <div class="stat-card-sub">High-confidence recovery candidates</div>
+                </div>
+                <div class="stat-card potential">
+                    <div class="stat-card-header">
+                        <span class="stat-card-label">Recoverable Amount</span>
+                        <div class="stat-card-icon">💎</div>
+                    </div>
+                    <div class="stat-card-value" id="opp-amount">₹0</div>
+                    <div class="stat-card-sub">AI-scored recoverable revenue</div>
+                </div>
+            </div>
+
+            <div class="table-card">
+                <div class="table-header">
+                    <div class="table-title">🎯 Top Recovery Opportunities (Ranked by AI Score)</div>
+                    <button class="btn btn-primary" id="btn-refresh-opportunities">
+                        🔄 Refresh Scores
+                    </button>
+                </div>
+                <div class="opportunities-grid" id="opportunities-grid">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ============ TAB: AI INSIGHTS ============ -->
+        <div class="tab-content" id="content-insights">
+            <div class="insights-panel">
+                <div class="insights-header">
+                    <div class="insights-title">🧠 AI-Powered Failure Analysis</div>
+                    <button class="btn btn-primary" id="btn-generate-insights">
+                        ✨ Generate New Insights
+                    </button>
+                </div>
+                <div id="insights-content">
+                    <div class="empty-state">
+                        <div class="empty-icon">🤖</div>
+                        <p>Click "Generate New Insights" to analyze recent payment failures with AI.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Model Info -->
+            <div class="chart-card" id="model-info-card">
+                <div class="chart-card-title">
+                    <span class="chart-icon">🌲</span> ML Model — Feature Importances
+                </div>
+                <div class="chart-container">
+                    <canvas id="chart-feature-importance"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============ TAB: MERCHANTS ============ -->
+        <div class="tab-content" id="content-merchants">
+            <div class="table-card">
+                <div class="table-header">
+                    <div class="table-title">🏪 Merchant Performance</div>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table class="data-table" id="merchants-table">
+                        <thead>
+                            <tr>
+                                <th>Merchant</th>
+                                <th>Type</th>
+                                <th>Total Txns</th>
+                                <th>Success</th>
+                                <th>Failed</th>
+                                <th>Recovered</th>
+                                <th>Revenue</th>
+                                <th>Lost Revenue</th>
+                                <th>Recovery Rate</th>
+                            </tr>
+                        </thead>
+                        <tbody id="merchants-tbody">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Modal Container -->
+    <div id="modal-container"></div>
+
+    <!-- Scripts -->
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/charts.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
