@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from typing import Optional
 import sys
 import os
+import time
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from services.recovery_engine import (
@@ -18,6 +19,10 @@ from services.recovery_engine import (
 )
 
 router = APIRouter(prefix="/api/recovery", tags=["Recovery"])
+
+# Simple in-memory cache for expensive ML scoring
+_cache = {}
+CACHE_TTL = 30  # seconds
 
 
 @router.get("/evaluate/{transaction_id}")
@@ -60,7 +65,13 @@ def get_recovery_opportunities(limit: int = Query(20, ge=1, le=100)):
     Get the top recovery opportunities ranked by AI retry score.
     These are the failed transactions most likely to be recovered.
     """
-    return batch_evaluate(limit=limit)
+    cache_key = f"opportunities_{limit}"
+    now = time.time()
+    if cache_key in _cache and (now - _cache[cache_key]["time"]) < CACHE_TTL:
+        return _cache[cache_key]["data"]
+    data = batch_evaluate(limit=limit)
+    _cache[cache_key] = {"data": data, "time": now}
+    return data
 
 
 @router.get("/insights")
@@ -70,3 +81,4 @@ def get_insights(merchant_id: Optional[str] = None):
     Uses Gemini LLM to analyze failures and provide recommendations.
     """
     return get_ai_insights(merchant_id=merchant_id)
+

@@ -115,10 +115,23 @@ async def health_check():
 
 @app.on_event("startup")
 async def startup():
-    """Initialize database on startup."""
+    """Initialize database and preload ML model on startup."""
     init_database()
+
+    # Preload ML model into memory so first request is instant
+    try:
+        from ml.predict import _load_model
+        _load_model()
+        print("[OK] ML model preloaded.")
+    except Exception as e:
+        print(f"[WARN] ML model not preloaded: {e}")
+
     print(f"\n* {settings.APP_NAME} v{settings.APP_VERSION}")
     print(f"  Dashboard: http://localhost:8000")
     print(f"  API Docs:  http://localhost:8000/docs")
     print(f"  AI Agent:  {'Connected' if settings.GEMINI_API_KEY else 'No API key'}")
     print()
+
+    # Auto-open browser
+    import webbrowser
+    webbrowser.open("http://localhost:8000")

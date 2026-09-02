@@ -107,8 +107,8 @@ Merchants lose **3-7% of revenue** due to payment failures. Most failures are re
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/YOUR_USERNAME/ai-revenue-recovery.git
-cd ai-revenue-recovery
+git clone https://github.com/charangowda18/razorpay.git
+cd razorpay
 
 # 2. Install dependencies
 pip install -r requirements.txt

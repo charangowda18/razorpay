@@ -181,7 +181,109 @@ def predict_retry_success(transaction: dict) -> dict:
 
 def batch_predict(transactions: list) -> list:
     """Predict retry success for multiple transactions at once."""
-    return [predict_retry_success(txn) for txn in transactions]
+    _load_model()
+    if not transactions:
+        return []
+
+    rows = []
+    for txn in transactions:
+        created_at = datetime.fromisoformat(txn.get("created_at", datetime.now().isoformat()))
+        features = {
+            "hour_of_day": created_at.hour,
+            "day_of_week": created_at.weekday(),
+            "is_weekend": 1 if created_at.weekday() >= 5 else 0,
+            "retry_count": txn.get("retry_count", 0),
+        }
+        
+        failure_reason = txn.get("failure_reason", "unknown")
+        payment_method = txn.get("payment_method", "card")
+        bank_name = txn.get("bank_name", "SBI")
+        
+        amount = txn.get("amount", 1000)
+        if amount <= 500:
+            amount_bucket = "micro"
+        elif amount <= 2000:
+            amount_bucket = "small"
+        elif amount <= 10000:
+            amount_bucket = "medium"
+        elif amount <= 50000:
+            amount_bucket = "large"
+        else:
+            amount_bucket = "enterprise"
+
+        row = {}
+        for col in _feature_columns:
+            if col in features:
+                row[col] = features[col]
+            elif col == f"failure_reason_{failure_reason}":
+                row[col] = 1
+            elif col == f"payment_method_{payment_method}":
+                row[col] = 1
+            elif col == f"bank_name_{bank_name}":
+                row[col] = 1
+            elif col == f"amount_bucket_{amount_bucket}":
+                row[col] = 1
+            else:
+                row[col] = 0
+        rows.append(row)
+
+    df = pd.DataFrame(rows, columns=_feature_columns)
+    probas = _model.predict_proba(df)
+    
+    results = []
+    for i, txn in enumerate(transactions):
+        ml_score = float(probas[i][1])
+        failure_reason = txn.get("failure_reason", "unknown")
+        retry_count = txn.get("retry_count", 0)
+
+        # Domain knowledge score — expert-defined recovery rates by failure reason
+        domain_scores = {
+            "network_timeout": 0.88,
+            "bank_server_down": 0.82,
+            "daily_limit_exceeded": 0.58,
+            "insufficient_funds": 0.50,
+            "authentication_failed": 0.35,
+            "card_declined": 0.18,
+            "card_expired": 0.02,
+            "invalid_card_number": 0.01,
+            "fraud_suspected": 0.03,
+        }
+        domain_score = domain_scores.get(failure_reason, 0.30)
+        domain_score *= (0.85 ** retry_count)
+
+        # Hybrid score: 30% ML + 70% domain knowledge
+        retry_score = round(0.3 * ml_score + 0.7 * domain_score, 4)
+
+        if retry_score >= 0.7:
+            confidence = "high"
+            recommended_action = "smart_retry"
+        elif retry_score >= 0.4:
+            confidence = "medium"
+            recommended_action = "notification"
+        else:
+            confidence = "low"
+            recommended_action = "manual_review"
+
+        if failure_reason in ("card_expired", "invalid_card_number", "fraud_suspected"):
+            confidence = "low"
+            recommended_action = "payment_link" if failure_reason == "card_expired" else "manual_review"
+
+        optimal_hours = {
+            "insufficient_funds": 10,
+            "bank_server_down": 14,
+            "network_timeout": 11,
+            "daily_limit_exceeded": 9,
+            "authentication_failed": 12,
+        }
+        optimal_retry_hour = optimal_hours.get(failure_reason, 10)
+
+        results.append({
+            "retry_score": retry_score,
+            "confidence": confidence,
+            "recommended_action": recommended_action,
+            "optimal_retry_hour": optimal_retry_hour,
+        })
+    return results
 
 
 def get_model_info() -> dict:

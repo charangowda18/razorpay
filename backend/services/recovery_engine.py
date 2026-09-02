@@ -315,22 +315,35 @@ def batch_evaluate(limit: int = 20) -> dict:
 
         transactions = [dict(row) for row in cursor.fetchall()]
 
+    from ml.predict import batch_predict
+    predictions = batch_predict(transactions)
+
     results = []
-    for txn in transactions:
-        evaluation = evaluate_transaction(txn)
-        retry_score = evaluation["retry_score"]
+    for i, txn in enumerate(transactions):
+        pred = predictions[i]
+        retry_score = pred["retry_score"]
+        
+        # Human readable explanation logic
+        failure_reason = txn["failure_reason"]
+        if retry_score >= 0.7:
+            reason = f"High chance of recovery ({retry_score:.0%}). {failure_reason.replace('_', ' ').title()} failures often resolve with a well-timed retry."
+        elif retry_score >= 0.4:
+            reason = f"Moderate recovery chance ({retry_score:.0%}). Consider notifying the customer and suggesting an alternative payment method."
+        else:
+            reason = f"Low recovery chance ({retry_score:.0%}). This {failure_reason.replace('_', ' ')} failure is unlikely to resolve with retries alone."
+
         results.append({
             "transaction_id": txn["id"],
             "amount": txn["amount"],
-            "failure_reason": txn["failure_reason"],
+            "failure_reason": failure_reason,
             "bank_name": txn["bank_name"],
             "payment_method": txn["payment_method"],
             "created_at": txn["created_at"],
             "retry_score": retry_score,
             "expected_recovery_value": round(txn["amount"] * retry_score, 2),
-            "confidence": evaluation["confidence"],
-            "recommended_action": evaluation["recommended_action"],
-            "reason": evaluation["reason"],
+            "confidence": pred["confidence"],
+            "recommended_action": pred["recommended_action"],
+            "reason": reason,
         })
 
     # Sort by expected_recovery_value descending (highest revenue impact first)
