@@ -1,14 +1,3 @@
-"""
-Recovery Engine — Orchestrator
-
-This is the main orchestrator that combines:
-- Retry Engine (ML + rules)
-- AI Agent (LLM insights)
-- Database operations
-
-It provides high-level recovery operations used by the API layer.
-"""
-
 import os
 import sys
 import uuid
@@ -25,7 +14,6 @@ from services.ai_agent import (
     is_available as is_ai_available,
 )
 
-
 def get_dashboard_stats() -> dict:
     """
     Get aggregated statistics for the main dashboard.
@@ -34,7 +22,6 @@ def get_dashboard_stats() -> dict:
     with get_db_connection() as conn:
         cursor = conn.cursor()
 
-        # Overall transaction stats
         cursor.execute("""
             SELECT
                 COUNT(*) as total,
@@ -50,7 +37,6 @@ def get_dashboard_stats() -> dict:
         """)
         stats = dict(cursor.fetchone())
 
-        # Failure reasons breakdown
         cursor.execute("""
             SELECT failure_reason, COUNT(*) as count, SUM(amount) as total_amount
             FROM transactions
@@ -61,7 +47,6 @@ def get_dashboard_stats() -> dict:
         """)
         failure_breakdown = [dict(row) for row in cursor.fetchall()]
 
-        # Bank-wise failure rates
         cursor.execute("""
             SELECT
                 bank_name,
@@ -75,7 +60,6 @@ def get_dashboard_stats() -> dict:
         """)
         bank_stats = [dict(row) for row in cursor.fetchall()]
 
-        # Payment method breakdown
         cursor.execute("""
             SELECT
                 payment_method,
@@ -89,7 +73,6 @@ def get_dashboard_stats() -> dict:
         """)
         method_stats = [dict(row) for row in cursor.fetchall()]
 
-        # Daily transaction trend (last 30 days)
         cursor.execute("""
             SELECT
                 DATE(created_at) as date,
@@ -106,7 +89,6 @@ def get_dashboard_stats() -> dict:
         """)
         daily_trend = [dict(row) for row in cursor.fetchall()]
 
-        # Hourly failure pattern
         cursor.execute("""
             SELECT
                 CAST(strftime('%H', created_at) AS INTEGER) as hour,
@@ -119,7 +101,6 @@ def get_dashboard_stats() -> dict:
         """)
         hourly_pattern = [dict(row) for row in cursor.fetchall()]
 
-        # Recovery rate
         total_failures = (stats["failed_count"] or 0) + (stats["recovered_count"] or 0)
         recovery_rate = round(
             100 * (stats["recovered_count"] or 0) / total_failures, 1
@@ -145,7 +126,6 @@ def get_dashboard_stats() -> dict:
             "daily_trend": daily_trend,
             "hourly_pattern": hourly_pattern,
         }
-
 
 def get_failed_transactions(
     limit: int = 50,
@@ -175,17 +155,14 @@ def get_failed_transactions(
 
         where_str = " AND ".join(where_clauses)
 
-        # Validate sort column
         allowed_sorts = {"created_at", "amount", "retry_score", "failure_reason", "status"}
         if sort_by not in allowed_sorts:
             sort_by = "created_at"
         sort_order = "DESC" if sort_order.lower() == "desc" else "ASC"
 
-        # Get total count
         cursor.execute(f"SELECT COUNT(*) FROM transactions WHERE {where_str}", params)
         total = cursor.fetchone()[0]
 
-        # Get transactions
         cursor.execute(f"""
             SELECT t.*,
                    (SELECT COUNT(*) FROM retry_attempts r WHERE r.transaction_id = t.id) as retry_count
@@ -203,7 +180,6 @@ def get_failed_transactions(
         "limit": limit,
         "offset": offset,
     }
-
 
 def evaluate_and_score_transaction(transaction_id: str) -> dict:
     """
@@ -232,7 +208,6 @@ def evaluate_and_score_transaction(transaction_id: str) -> dict:
         "evaluation": evaluation,
     }
 
-
 def trigger_recovery(transaction_id: str) -> dict:
     """
     Trigger the full recovery flow for a transaction:
@@ -240,7 +215,6 @@ def trigger_recovery(transaction_id: str) -> dict:
     2. Schedule retry if recommended
     3. Generate AI recovery strategy
     """
-    # Step 1: Evaluate
     eval_result = evaluate_and_score_transaction(transaction_id)
     if "error" in eval_result:
         return eval_result
@@ -248,12 +222,10 @@ def trigger_recovery(transaction_id: str) -> dict:
     transaction = eval_result["transaction"]
     evaluation = eval_result["evaluation"]
 
-    # Step 2: Schedule retry if recommended
     retry_result = None
     if evaluation.get("should_retry"):
         retry_result = schedule_retry(transaction_id, evaluation)
 
-    # Step 3: Generate AI strategy
     ai_strategy = None
     if is_ai_available():
         try:
@@ -261,7 +233,6 @@ def trigger_recovery(transaction_id: str) -> dict:
         except Exception as e:
             ai_strategy = {"error": str(e)}
 
-    # Step 4: Record recovery action
     action_id = f"action_{uuid.uuid4().hex[:12]}"
     with get_db_connection() as conn:
         cursor = conn.cursor()
@@ -287,11 +258,9 @@ def trigger_recovery(transaction_id: str) -> dict:
         "action_id": action_id,
     }
 
-
 def execute_retry(transaction_id: str, retry_id: str) -> dict:
     """Execute a scheduled retry (simulation)."""
     return simulate_retry_execution(transaction_id, retry_id)
-
 
 def batch_evaluate(limit: int = 20) -> dict:
     """
@@ -301,7 +270,6 @@ def batch_evaluate(limit: int = 20) -> dict:
     with get_db_connection() as conn:
         cursor = conn.cursor()
 
-        # Fetch more candidates than needed, score them all, then return top N
         fetch_limit = limit * 3
         cursor.execute("""
             SELECT t.*,
@@ -323,7 +291,6 @@ def batch_evaluate(limit: int = 20) -> dict:
         pred = predictions[i]
         retry_score = pred["retry_score"]
         
-        # Human readable explanation logic
         failure_reason = txn["failure_reason"]
         if retry_score >= 0.7:
             reason = f"High chance of recovery ({retry_score:.0%}). {failure_reason.replace('_', ' ').title()} failures often resolve with a well-timed retry."
@@ -346,10 +313,8 @@ def batch_evaluate(limit: int = 20) -> dict:
             "reason": reason,
         })
 
-    # Sort by expected_recovery_value descending (highest revenue impact first)
     results.sort(key=lambda x: x["expected_recovery_value"], reverse=True)
 
-    # Return only the requested number of top opportunities
     results = results[:limit]
 
     total_recoverable = sum(r["expected_recovery_value"] for r in results)
@@ -360,12 +325,10 @@ def batch_evaluate(limit: int = 20) -> dict:
         "total_recoverable_amount": round(total_recoverable, 2),
     }
 
-
 def get_ai_insights(merchant_id: str = None) -> dict:
     """
     Get AI-generated insights about payment failures.
     """
-    # Fetch recent failed transactions for analysis
     with get_db_connection() as conn:
         cursor = conn.cursor()
 
@@ -387,10 +350,8 @@ def get_ai_insights(merchant_id: str = None) -> dict:
     if not transactions:
         return {"insights": "No failed transactions found for analysis."}
 
-    # Generate AI analysis
     analysis = analyze_failure_patterns(transactions)
 
-    # Store insight in database
     insight_id = f"insight_{uuid.uuid4().hex[:12]}"
     with get_db_connection() as conn:
         cursor = conn.cursor()
@@ -414,7 +375,6 @@ def get_ai_insights(merchant_id: str = None) -> dict:
         "ai_available": is_ai_available(),
         "transactions_analyzed": len(transactions),
     }
-
 
 def get_merchants_list() -> list:
     """Get all merchants with their performance stats."""

@@ -1,7 +1,3 @@
-"""
-Transactions Router — CRUD operations for payment transactions.
-"""
-
 from fastapi import APIRouter, Query, HTTPException
 from pydantic import BaseModel
 from typing import Optional
@@ -12,7 +8,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from services.recovery_engine import get_failed_transactions
 
 router = APIRouter(prefix="/api/transactions", tags=["Transactions"])
-
 
 @router.get("/failed")
 def list_failed_transactions(
@@ -37,7 +32,6 @@ def list_failed_transactions(
         sort_by=sort_by,
         sort_order=sort_order,
     )
-
 
 @router.get("/{transaction_id}")
 def get_transaction(transaction_id: str):

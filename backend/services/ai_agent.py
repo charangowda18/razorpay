@@ -1,16 +1,3 @@
-"""
-AI Agent — Gemini LLM Integration
-
-Uses Google Gemini to provide intelligent insights about payment failures:
-1. Failure pattern analysis — Why are payments failing?
-2. Recovery strategy recommendations — What should the merchant do?
-3. Customer notification messages — Personalized recovery messages
-4. Trend detection — Spot unusual spikes in failures
-
-Design Decision: We use structured prompts with clear instructions rather than
-fine-tuning. This makes the system transparent and easy to modify.
-"""
-
 import os
 import sys
 import json
@@ -19,7 +6,6 @@ from datetime import datetime
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import settings
 
-# Try to import Gemini, gracefully handle missing API key
 try:
     import google.generativeai as genai
 
@@ -34,7 +20,6 @@ except Exception as e:
     print(f"⚠️ Gemini Initialization Error: {e}")
     _gemini_available = False
     _gemini_model = None
-
 
 def _call_gemini(prompt: str) -> str:
     """
@@ -51,7 +36,6 @@ def _call_gemini(prompt: str) -> str:
         print(f"⚠️  Gemini API error: {e}")
         return _generate_fallback_response(prompt)
 
-
 def _generate_fallback_response(prompt: str) -> str:
     """Generate a basic rule-based response when Gemini is unavailable."""
     return json.dumps({
@@ -64,7 +48,6 @@ def _generate_fallback_response(prompt: str) -> str:
         ],
         "note": "Connect Gemini API key for detailed AI-powered insights."
     })
-
 
 def analyze_failure_patterns(transactions_data: list) -> dict:
     """
@@ -79,7 +62,6 @@ def analyze_failure_patterns(transactions_data: list) -> dict:
     if not transactions_data:
         return {"summary": "No failed transactions to analyze.", "patterns": [], "recommendations": []}
 
-    # Prepare summary statistics for the prompt
     total = len(transactions_data)
     failure_counts = {}
     bank_counts = {}
@@ -138,7 +120,6 @@ Provide your analysis in the following JSON format (respond ONLY with valid JSON
     try:
         result = json.loads(response)
     except json.JSONDecodeError:
-        # Try to extract JSON from markdown code blocks
         if "```json" in response:
             json_str = response.split("```json")[1].split("```")[0].strip()
             try:
@@ -155,7 +136,6 @@ Provide your analysis in the following JSON format (respond ONLY with valid JSON
             result = {"summary": response, "patterns": [], "recommendations": []}
 
     return result
-
 
 def generate_recovery_strategy(transaction: dict) -> dict:
     """
@@ -219,7 +199,6 @@ Provide your strategy in the following JSON format (respond ONLY with valid JSON
 
     return result
 
-
 def generate_merchant_summary(merchant_data: dict) -> dict:
     """
     Generate an overall health summary for a merchant's payment performance.
@@ -282,7 +261,6 @@ Provide your summary in the following JSON format (respond ONLY with valid JSON,
 
     return result
 
-
 def generate_trend_alert(trend_data: dict) -> dict:
     """
     Generate an AI-powered alert about unusual trends in payment failures.
@@ -324,7 +302,6 @@ Respond in JSON format (respond ONLY with valid JSON, no markdown):
             result = {"alert_title": "Trend Analysis", "description": response}
 
     return result
-
 
 def is_available() -> bool:
     """Check if the Gemini API is configured and available."""

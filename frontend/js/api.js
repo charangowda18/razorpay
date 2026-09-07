@@ -1,16 +1,7 @@
-/**
- * API Client — Handles all communication with the FastAPI backend.
- * 
- * Design: Centralized API module so all endpoints are in one place.
- * Makes it easy to swap the base URL for deployment.
- */
-
-const API_BASE = '';  // Same origin (empty string = relative to current host)
+const API_BASE = '';
 
 const api = {
-    /**
-     * Generic fetch wrapper with error handling.
-     */
+    
     async request(endpoint, options = {}) {
         try {
             const response = await fetch(`${API_BASE}${endpoint}`, {
@@ -33,26 +24,22 @@ const api = {
         }
     },
 
-    // ======== Analytics ========
-
-    /** Get all dashboard statistics */
+    
     async getDashboardStats() {
         return this.request('/api/analytics/dashboard');
     },
 
-    /** Get merchant list with stats */
+    
     async getMerchants() {
         return this.request('/api/analytics/merchants');
     },
 
-    /** Get ML model info */
+    
     async getModelInfo() {
         return this.request('/api/analytics/model-info');
     },
 
-    // ======== Transactions ========
-
-    /** Get failed transactions with optional filters */
+    
     async getFailedTransactions(params = {}) {
         const query = new URLSearchParams();
         if (params.limit) query.set('limit', params.limit);
@@ -67,46 +54,42 @@ const api = {
         return this.request(`/api/transactions/failed${queryStr ? '?' + queryStr : ''}`);
     },
 
-    /** Get single transaction details */
+    
     async getTransaction(transactionId) {
         return this.request(`/api/transactions/${transactionId}`);
     },
 
-    // ======== Recovery ========
-
-    /** Evaluate a transaction's retry score */
+    
     async evaluateTransaction(transactionId) {
         return this.request(`/api/recovery/evaluate/${transactionId}`);
     },
 
-    /** Trigger full recovery flow */
+    
     async triggerRecovery(transactionId) {
         return this.request(`/api/recovery/trigger/${transactionId}`, {
             method: 'POST',
         });
     },
 
-    /** Execute a retry attempt */
+    
     async executeRetry(transactionId, retryId) {
         return this.request(`/api/recovery/execute-retry/${transactionId}/${retryId}`, {
             method: 'POST',
         });
     },
 
-    /** Get top recovery opportunities */
+    
     async getRecoveryOpportunities(limit = 20) {
         return this.request(`/api/recovery/opportunities?limit=${limit}`);
     },
 
-    /** Get AI-generated insights */
+    
     async getInsights(merchantId = null) {
         const query = merchantId ? `?merchant_id=${merchantId}` : '';
         return this.request(`/api/recovery/insights${query}`);
     },
 
-    // ======== Health ========
-
-    /** Check system health */
+    
     async healthCheck() {
         return this.request('/health');
     },

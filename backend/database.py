@@ -1,26 +1,19 @@
-"""
-Database setup and connection management.
-Uses SQLite for zero-config simplicity.
-"""
-
 import sqlite3
 import os
 from contextlib import contextmanager
 
 DATABASE_PATH = os.getenv("DATABASE_PATH", "revenue_recovery.db")
 
-
 def get_db_path():
     """Get the absolute path to the database file."""
     return os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), DATABASE_PATH)
-
 
 @contextmanager
 def get_db_connection():
     """Context manager for database connections with auto-commit and cleanup."""
     conn = sqlite3.connect(get_db_path())
-    conn.row_factory = sqlite3.Row  # Return rows as dictionaries
-    conn.execute("PRAGMA journal_mode=WAL")  # Better concurrent read performance
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA foreign_keys=ON")
     try:
         yield conn
@@ -31,13 +24,11 @@ def get_db_connection():
     finally:
         conn.close()
 
-
 def init_database():
     """Initialize the database schema. Safe to call multiple times (uses IF NOT EXISTS)."""
     with get_db_connection() as conn:
         cursor = conn.cursor()
 
-        # Merchants table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS merchants (
                 id TEXT PRIMARY KEY,
@@ -49,7 +40,6 @@ def init_database():
             )
         """)
 
-        # Transactions table (core of the system)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS transactions (
                 id TEXT PRIMARY KEY,
@@ -73,7 +63,6 @@ def init_database():
             )
         """)
 
-        # Retry attempts table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS retry_attempts (
                 id TEXT PRIMARY KEY,
@@ -89,7 +78,6 @@ def init_database():
             )
         """)
 
-        # Recovery actions table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS recovery_actions (
                 id TEXT PRIMARY KEY,
@@ -107,7 +95,6 @@ def init_database():
             )
         """)
 
-        # AI insights table (stores LLM-generated analysis)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS ai_insights (
                 id TEXT PRIMARY KEY,
@@ -122,7 +109,6 @@ def init_database():
             )
         """)
 
-        # Create indexes for performance
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_transactions_merchant ON transactions(merchant_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_transactions_status ON transactions(status)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_transactions_created ON transactions(created_at)")
@@ -132,7 +118,6 @@ def init_database():
 
         conn.commit()
         print("[SUCCESS] Database initialized successfully.")
-
 
 if __name__ == "__main__":
     init_database()

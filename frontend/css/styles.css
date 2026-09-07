@@ -1,12 +1,5 @@
-/* ============================================================
-   AI Revenue Recovery — Premium Dark Theme
-   Design: Glassmorphism + Vibrant Gradients + Micro-animations
-   ============================================================ */
-
-/* ---------- Google Fonts ---------- */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
-/* ---------- Loading Animation ---------- */
 .loading-dots {
     font-size: 0.85em;
     color: var(--text-muted, #64748b);
@@ -27,9 +20,8 @@
     75% { content: '...'; }
 }
 
-/* ---------- CSS Variables (Design Tokens) ---------- */
 :root {
-    /* Colors — Curated dark palette with Razorpay blue accents */
+    
     --bg-primary: #0a0e1a;
     --bg-secondary: #111827;
     --bg-card: rgba(17, 24, 39, 0.8);
@@ -42,14 +34,14 @@
     --text-muted: #64748b;
     --text-accent: #60a5fa;
 
-    /* Razorpay-inspired accent */
+    
     --accent-blue: #3b82f6;
     --accent-blue-glow: rgba(59, 130, 246, 0.3);
     --accent-cyan: #06b6d4;
     --accent-purple: #8b5cf6;
     --accent-indigo: #6366f1;
 
-    /* Status colors */
+    
     --success: #10b981;
     --success-bg: rgba(16, 185, 129, 0.1);
     --warning: #f59e0b;
@@ -61,14 +53,14 @@
     --recovered: #8b5cf6;
     --recovered-bg: rgba(139, 92, 246, 0.1);
 
-    /* Gradients */
+    
     --gradient-primary: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
     --gradient-success: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
     --gradient-danger: linear-gradient(135deg, #ef4444 0%, #f59e0b 100%);
     --gradient-card: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
     --gradient-hero: linear-gradient(135deg, #0a0e1a 0%, #1a1040 50%, #0a0e1a 100%);
 
-    /* Spacing */
+    
     --space-xs: 4px;
     --space-sm: 8px;
     --space-md: 16px;
@@ -76,30 +68,29 @@
     --space-xl: 32px;
     --space-2xl: 48px;
 
-    /* Border Radius */
+    
     --radius-sm: 8px;
     --radius-md: 12px;
     --radius-lg: 16px;
     --radius-xl: 20px;
     --radius-full: 9999px;
 
-    /* Shadows */
+    
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
     --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.4);
     --shadow-glow: 0 0 20px var(--accent-blue-glow);
 
-    /* Typography */
+    
     --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
 
-    /* Transitions */
+    
     --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
     --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
     --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ---------- Reset & Base ---------- */
 *, *::before, *::after {
     margin: 0;
     padding: 0;
@@ -121,7 +112,6 @@ body {
     -webkit-font-smoothing: antialiased;
 }
 
-/* Background gradient animation */
 body::before {
     content: '';
     position: fixed;
@@ -152,14 +142,12 @@ body::after {
     75% { transform: translate(-5%, 5%); }
 }
 
-/* ---------- Layout ---------- */
 .app-container {
     max-width: 1440px;
     margin: 0 auto;
     padding: var(--space-lg);
 }
 
-/* ---------- Header ---------- */
 .header {
     display: flex;
     align-items: center;
@@ -251,7 +239,6 @@ body::after {
     border: 1px solid rgba(59, 130, 246, 0.2);
 }
 
-/* ---------- Navigation Tabs ---------- */
 .nav-tabs {
     display: flex;
     gap: var(--space-sm);
@@ -294,7 +281,6 @@ body::after {
     font-size: 1rem;
 }
 
-/* ---------- Stats Cards Grid ---------- */
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -392,7 +378,6 @@ body::after {
 .stat-card-sub .highlight.purple { color: var(--recovered); }
 .stat-card-sub .highlight.yellow { color: var(--warning); }
 
-/* ---------- Charts Section ---------- */
 .charts-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -427,7 +412,6 @@ body::after {
     height: 280px;
 }
 
-/* ---------- Transactions Table ---------- */
 .table-card {
     background: var(--bg-card);
     border: 1px solid var(--bg-glass-border);
@@ -523,7 +507,6 @@ body::after {
     font-variant-numeric: tabular-nums;
 }
 
-/* Status badges */
 .badge {
     display: inline-flex;
     align-items: center;
@@ -575,7 +558,6 @@ body::after {
     color: var(--danger);
 }
 
-/* Retry score bar */
 .score-bar-container {
     display: flex;
     align-items: center;
@@ -607,7 +589,6 @@ body::after {
     min-width: 35px;
 }
 
-/* ---------- Action Buttons ---------- */
 .btn {
     padding: 8px 16px;
     border: none;
@@ -677,7 +658,6 @@ body::after {
     color: var(--text-primary);
 }
 
-/* ---------- AI Insights Panel ---------- */
 .insights-panel {
     background: var(--bg-card);
     border: 1px solid var(--bg-glass-border);
@@ -767,7 +747,6 @@ body::after {
     color: var(--accent-blue);
 }
 
-/* ---------- Recovery Opportunities ---------- */
 .opportunities-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
@@ -836,7 +815,6 @@ body::after {
     line-height: 1.5;
 }
 
-/* ---------- Tab Content Sections ---------- */
 .tab-content {
     display: none;
     animation: fadeIn 0.3s ease;
@@ -851,7 +829,6 @@ body::after {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* ---------- Loading State ---------- */
 .loading-skeleton {
     background: linear-gradient(90deg,
         var(--bg-glass) 25%,
@@ -881,7 +858,6 @@ body::after {
 
 .loading-text.short { width: 35%; }
 
-/* ---------- Empty State ---------- */
 .empty-state {
     text-align: center;
     padding: var(--space-2xl);
@@ -898,7 +874,6 @@ body::after {
     font-size: 0.9rem;
 }
 
-/* ---------- Toast Notifications ---------- */
 .toast-container {
     position: fixed;
     top: 20px;
@@ -939,7 +914,6 @@ body::after {
     to { transform: translateX(100%); opacity: 0; }
 }
 
-/* ---------- Modal ---------- */
 .modal-overlay {
     position: fixed;
     inset: 0;
@@ -988,7 +962,6 @@ body::after {
     color: var(--text-primary);
 }
 
-/* ---------- Pagination ---------- */
 .pagination {
     display: flex;
     align-items: center;
@@ -1025,7 +998,6 @@ body::after {
     padding: 0 var(--space-md);
 }
 
-/* ---------- Scrollbar ---------- */
 ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -1044,7 +1016,6 @@ body::after {
     background: rgba(255, 255, 255, 0.2);
 }
 
-/* ---------- Responsive ---------- */
 @media (max-width: 1024px) {
     .charts-grid {
         grid-template-columns: 1fr;

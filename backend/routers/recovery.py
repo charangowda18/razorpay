@@ -1,7 +1,3 @@
-"""
-Recovery Router — AI-powered recovery operations.
-"""
-
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from typing import Optional
@@ -20,10 +16,8 @@ from services.recovery_engine import (
 
 router = APIRouter(prefix="/api/recovery", tags=["Recovery"])
 
-# Simple in-memory cache for expensive ML scoring
 _cache = {}
-CACHE_TTL = 30  # seconds
-
+CACHE_TTL = 30
 
 @router.get("/evaluate/{transaction_id}")
 def evaluate_transaction_endpoint(transaction_id: str):
@@ -35,7 +29,6 @@ def evaluate_transaction_endpoint(transaction_id: str):
     if "error" in result:
         raise HTTPException(status_code=404, detail=result["error"])
     return result
-
 
 @router.post("/trigger/{transaction_id}")
 def trigger_recovery_endpoint(transaction_id: str):
@@ -50,14 +43,12 @@ def trigger_recovery_endpoint(transaction_id: str):
         raise HTTPException(status_code=404, detail=result["error"])
     return result
 
-
 @router.post("/execute-retry/{transaction_id}/{retry_id}")
 def execute_retry_endpoint(transaction_id: str, retry_id: str):
     """
     Execute a scheduled retry attempt (simulated for demo).
     """
     return execute_retry(transaction_id, retry_id)
-
 
 @router.get("/opportunities")
 def get_recovery_opportunities(limit: int = Query(20, ge=1, le=100)):
@@ -73,7 +64,6 @@ def get_recovery_opportunities(limit: int = Query(20, ge=1, le=100)):
     _cache[cache_key] = {"data": data, "time": now}
     return data
 
-
 @router.get("/insights")
 def get_insights(merchant_id: Optional[str] = None):
     """
@@ -81,4 +71,3 @@ def get_insights(merchant_id: Optional[str] = None):
     Uses Gemini LLM to analyze failures and provide recommendations.
     """
     return get_ai_insights(merchant_id=merchant_id)
-

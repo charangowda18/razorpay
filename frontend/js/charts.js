@@ -1,11 +1,3 @@
-/**
- * Charts Module — Creates and manages all Chart.js visualizations.
- * 
- * Uses Chart.js with custom dark theme configuration.
- * All charts are designed to match the premium dark UI.
- */
-
-// Chart.js global defaults for dark theme
 Chart.defaults.color = '#94a3b8';
 Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.06)';
 Chart.defaults.font.family = "'Inter', sans-serif";
@@ -13,12 +5,8 @@ Chart.defaults.font.size = 12;
 Chart.defaults.plugins.legend.labels.usePointStyle = true;
 Chart.defaults.plugins.legend.labels.padding = 16;
 
-// Store chart instances for cleanup
 const chartInstances = {};
 
-/**
- * Safely destroy and recreate a chart
- */
 function createChart(canvasId, config) {
     if (chartInstances[canvasId]) {
         chartInstances[canvasId].destroy();
@@ -29,9 +17,6 @@ function createChart(canvasId, config) {
     return chartInstances[canvasId];
 }
 
-/**
- * Daily Recovery Trend — Line chart showing failed vs recovered over time
- */
 function renderDailyTrendChart(dailyData) {
     if (!dailyData || dailyData.length === 0) return;
 
@@ -113,9 +98,6 @@ function renderDailyTrendChart(dailyData) {
     });
 }
 
-/**
- * Failure Reasons — Doughnut chart
- */
 function renderFailureReasonsChart(failureData) {
     if (!failureData || failureData.length === 0) return;
 
@@ -166,13 +148,9 @@ function renderFailureReasonsChart(failureData) {
     });
 }
 
-/**
- * Bank-wise Failure Rate — Horizontal bar chart
- */
 function renderBankChart(bankData) {
     if (!bankData || bankData.length === 0) return;
 
-    // Sort by failure rate
     const sorted = [...bankData].sort((a, b) => (b.failure_rate || 0) - (a.failure_rate || 0)).slice(0, 8);
 
     createChart('chart-banks', {
@@ -232,13 +210,9 @@ function renderBankChart(bankData) {
     });
 }
 
-/**
- * Hourly Failure Pattern — Area chart
- */
 function renderHourlyChart(hourlyData) {
     if (!hourlyData || hourlyData.length === 0) return;
 
-    // Ensure all 24 hours are represented
     const fullData = Array.from({ length: 24 }, (_, i) => {
         const found = hourlyData.find(d => d.hour === i);
         return {
@@ -301,9 +275,6 @@ function renderHourlyChart(hourlyData) {
     });
 }
 
-/**
- * Feature Importance — Horizontal bar chart for ML model explanation
- */
 function renderFeatureImportanceChart(modelInfo) {
     if (!modelInfo || !modelInfo.top_features) return;
 
@@ -364,9 +335,6 @@ function renderFeatureImportanceChart(modelInfo) {
     });
 }
 
-/**
- * Helper: Format large amounts
- */
 function formatAmount(amount) {
     if (!amount) return '0';
     if (amount >= 10000000) return (amount / 10000000).toFixed(2) + ' Cr';

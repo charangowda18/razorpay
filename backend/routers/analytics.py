@@ -1,7 +1,3 @@
-"""
-Analytics Router — Dashboard data endpoints.
-"""
-
 from fastapi import APIRouter, Query
 from typing import Optional
 import sys
@@ -13,10 +9,8 @@ from services.recovery_engine import get_dashboard_stats, get_merchants_list
 
 router = APIRouter(prefix="/api/analytics", tags=["Analytics"])
 
-# Simple in-memory cache (30 second TTL)
 _cache = {}
-CACHE_TTL = 30  # seconds
-
+CACHE_TTL = 30
 
 def _get_cached(key, fetch_fn):
     """Return cached data if fresh, otherwise fetch and cache."""
@@ -27,7 +21,6 @@ def _get_cached(key, fetch_fn):
     _cache[key] = {"data": data, "time": now}
     return data
 
-
 @router.get("/dashboard")
 def dashboard_stats():
     """
@@ -36,14 +29,12 @@ def dashboard_stats():
     """
     return _get_cached("dashboard", get_dashboard_stats)
 
-
 @router.get("/merchants")
 def merchants_list():
     """
     Get all merchants with their payment performance metrics.
     """
     return _get_cached("merchants", get_merchants_list)
-
 
 @router.get("/model-info")
 def model_info():
@@ -60,4 +51,3 @@ def model_info():
             "error": str(e),
             "hint": "Run train_model.py to train the retry prediction model."
         }
-

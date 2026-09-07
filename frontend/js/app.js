@@ -1,14 +1,3 @@
-/**
- * Main Application — Orchestrates the dashboard UI.
- * 
- * Handles: Tab navigation, data loading, table rendering, 
- * user interactions, toast notifications, and modals.
- */
-
-// ============================================================
-// STATE
-// ============================================================
-
 const state = {
     currentTab: 'overview',
     transactions: {
@@ -22,10 +11,6 @@ const state = {
     merchants: null,
 };
 
-// ============================================================
-// INITIALIZATION
-// ============================================================
-
 document.addEventListener('DOMContentLoaded', async () => {
     setupTabNavigation();
     setupFilters();
@@ -33,10 +18,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     await checkSystemHealth();
     await loadDashboardData();
 });
-
-// ============================================================
-// SYSTEM HEALTH CHECK
-// ============================================================
 
 async function checkSystemHealth() {
     try {
@@ -60,10 +41,6 @@ async function checkSystemHealth() {
     }
 }
 
-// ============================================================
-// TAB NAVIGATION
-// ============================================================
-
 function setupTabNavigation() {
     document.querySelectorAll('.nav-tab').forEach(tab => {
         tab.addEventListener('click', () => {
@@ -76,15 +53,12 @@ function setupTabNavigation() {
 function switchTab(tabName) {
     state.currentTab = tabName;
 
-    // Update tab buttons
     document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
     document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
 
-    // Update content
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     document.getElementById(`content-${tabName}`).classList.add('active');
 
-    // Load data for the tab
     switch (tabName) {
         case 'overview':
             loadDashboardData();
@@ -104,10 +78,6 @@ function switchTab(tabName) {
     }
 }
 
-// ============================================================
-// FILTERS
-// ============================================================
-
 function setupFilters() {
     ['filter-failure-reason', 'filter-payment-method', 'filter-bank'].forEach(id => {
         const el = document.getElementById(id);
@@ -120,12 +90,7 @@ function setupFilters() {
     });
 }
 
-// ============================================================
-// BUTTONS
-// ============================================================
-
 function setupButtons() {
-    // Pagination
     document.getElementById('btn-prev-page')?.addEventListener('click', () => {
         if (state.transactions.page > 1) {
             state.transactions.page--;
@@ -141,21 +106,15 @@ function setupButtons() {
         }
     });
 
-    // Recovery opportunities refresh
     document.getElementById('btn-refresh-opportunities')?.addEventListener('click', () => {
         loadOpportunities();
         showToast('Refreshing recovery scores...', 'info');
     });
 
-    // AI Insights
     document.getElementById('btn-generate-insights')?.addEventListener('click', () => {
         generateInsights();
     });
 }
-
-// ============================================================
-// DATA LOADING — OVERVIEW
-// ============================================================
 
 async function loadDashboardData() {
     try {
@@ -181,17 +140,12 @@ function renderOverviewStats(overview) {
     document.getElementById('stat-recovery-rate').textContent = `${overview.recovery_rate || 0}%`;
     document.getElementById('stat-potential-amount').textContent = `₹${formatCurrency(overview.potential_recovery)}`;
 
-    // Show recovery count breakdown for clarity
     const totalFailed = (overview.failed_count || 0) + (overview.recovered_count || 0);
     const countsEl = document.getElementById('stat-recovery-counts');
     if (countsEl) {
         countsEl.textContent = `${overview.recovered_count || 0} of ${totalFailed} failed txns`;
     }
 }
-
-// ============================================================
-// DATA LOADING — TRANSACTIONS
-// ============================================================
 
 async function loadTransactions() {
     const failureReason = document.getElementById('filter-failure-reason')?.value;
@@ -280,10 +234,6 @@ function renderPagination() {
     document.getElementById('btn-next-page').disabled = state.transactions.page >= totalPages;
 }
 
-// ============================================================
-// DATA LOADING — RECOVERY OPPORTUNITIES
-// ============================================================
-
 async function loadOpportunities() {
     try {
         const data = await api.getRecoveryOpportunities(20);
@@ -313,7 +263,6 @@ function renderOpportunities(opportunities) {
         const expectedRecovery = Number(opp.expected_recovery_value || (opp.amount * opp.retry_score)).toLocaleString('en-IN', { maximumFractionDigits: 0 });
         const originalAmount = Number(opp.amount).toLocaleString('en-IN', { maximumFractionDigits: 0 });
         
-        // Map recommended actions to friendly labels
         const actionLabels = {
             'smart_retry': '🤖 Auto Smart Retry',
             'notification': '✉️ Send Payment Link',
@@ -356,10 +305,6 @@ function renderOpportunities(opportunities) {
     }).join('');
 }
 
-// ============================================================
-// DATA LOADING — AI INSIGHTS
-// ============================================================
-
 async function generateInsights() {
     const btn = document.getElementById('btn-generate-insights');
     const content = document.getElementById('insights-content');
@@ -399,7 +344,6 @@ function renderInsights(data) {
 
     let html = '';
 
-    // Summary
     if (analysis.summary) {
         html += `
             <div class="insight-card">
@@ -417,7 +361,6 @@ function renderInsights(data) {
         `;
     }
 
-    // Patterns
     if (analysis.patterns && analysis.patterns.length > 0) {
         html += `<h3 style="font-size: 0.9rem; color: var(--text-secondary); margin: 16px 0 12px; font-weight: 600;">📋 Detected Patterns</h3>`;
         analysis.patterns.forEach(pattern => {
@@ -436,7 +379,6 @@ function renderInsights(data) {
         });
     }
 
-    // Recommendations
     if (analysis.recommendations && analysis.recommendations.length > 0) {
         html += `
             <div class="insight-card">
@@ -448,7 +390,6 @@ function renderInsights(data) {
         `;
     }
 
-    // Transactions analyzed count
     html += `
         <div style="text-align: center; padding: 12px; color: var(--text-muted); font-size: 0.78rem;">
             Analysis based on ${data.transactions_analyzed || 0} recent failed transactions
@@ -469,10 +410,6 @@ async function loadModelInfo() {
         console.log('Model info not available yet');
     }
 }
-
-// ============================================================
-// DATA LOADING — MERCHANTS
-// ============================================================
 
 async function loadMerchants() {
     try {
@@ -513,10 +450,6 @@ function renderMerchantsTable(merchants) {
     }).join('');
 }
 
-// ============================================================
-// RECOVERY ACTIONS
-// ============================================================
-
 async function handleRecovery(transactionId) {
     showToast('🤖 Running AI recovery analysis...', 'info');
 
@@ -525,7 +458,6 @@ async function handleRecovery(transactionId) {
         showRecoveryModal(result);
         showToast('Recovery analysis complete!', 'success');
 
-        // Refresh data
         if (state.currentTab === 'transactions') loadTransactions();
         if (state.currentTab === 'recovery') loadOpportunities();
     } catch (error) {
@@ -635,14 +567,9 @@ function closeModal(event) {
     document.getElementById('modal-container').innerHTML = '';
 }
 
-// Close modal on Escape key
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeModal();
 });
-
-// ============================================================
-// UTILITIES
-// ============================================================
 
 function formatCurrency(amount) {
     if (!amount) return '0';
@@ -668,10 +595,6 @@ function getStatusBadge(status) {
     return badges[status] || `<span class="badge">${status}</span>`;
 }
 
-// ============================================================
-// TOAST NOTIFICATIONS
-// ============================================================
-
 function showToast(message, type = 'info') {
     const container = document.getElementById('toast-container');
     const toast = document.createElement('div');
@@ -682,7 +605,6 @@ function showToast(message, type = 'info') {
 
     container.appendChild(toast);
 
-    // Auto-remove after 4 seconds
     setTimeout(() => {
         toast.style.animation = 'slideOut 0.3s ease forwards';
         setTimeout(() => toast.remove(), 300);

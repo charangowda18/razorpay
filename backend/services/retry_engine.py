@@ -1,17 +1,3 @@
-"""
-Smart Retry Engine
-
-Combines the ML prediction model with business rules to decide:
-1. SHOULD we retry this payment?
-2. WHEN should we retry?
-3. HOW should we retry (same method or alternative)?
-
-Design: Hybrid approach (ML scoring + business rules)
-- ML model predicts raw success probability
-- Business rules act as guardrails (e.g., never retry fraud, cap max attempts)
-- This gives us adaptability of ML with safety of deterministic rules
-"""
-
 import os
 import sys
 import uuid
@@ -21,26 +7,18 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import settings
 from database import get_db_connection
 
-# Try to import ML prediction
 try:
     from ml.predict import predict_retry_success
     _ml_available = True
 except Exception:
     _ml_available = False
 
-
-# ============================================================
-# BUSINESS RULES — These are the guardrails
-# ============================================================
-
-# Failure reasons that should NEVER be retried
 NON_RETRYABLE_FAILURES = {
     "card_expired",
     "invalid_card_number",
     "fraud_suspected",
 }
 
-# Failure reasons that benefit from alternative payment methods
 ALT_PAYMENT_CANDIDATES = {
     "card_declined": "upi",
     "netbanking_unavailable": "upi",
@@ -48,16 +26,14 @@ ALT_PAYMENT_CANDIDATES = {
     "daily_limit_exceeded": "wallet",
 }
 
-# Optimal retry windows by failure reason (in hours after failure)
 RETRY_WINDOWS = {
-    "insufficient_funds": [4, 24, 72],       # Wait for salary/fund transfer
-    "bank_server_down": [1, 3, 6],             # Banks usually recover quickly
-    "network_timeout": [0.5, 1, 3],            # Quick retries work
-    "card_declined": [24, 48, 96],             # Needs time/customer action
+    "insufficient_funds": [4, 24, 72],
+    "bank_server_down": [1, 3, 6],
+    "network_timeout": [0.5, 1, 3],
+    "card_declined": [24, 48, 96],
     "authentication_failed": [2, 12, 24],
-    "daily_limit_exceeded": [24, 48],          # Wait for limit reset
+    "daily_limit_exceeded": [24, 48],
 }
-
 
 def evaluate_transaction(transaction: dict) -> dict:
     """
@@ -73,7 +49,6 @@ def evaluate_transaction(transaction: dict) -> dict:
     retry_count = transaction.get("retry_count", 0)
     amount = transaction.get("amount", 0)
 
-    # ---- Rule 1: Check if retryable ----
     if failure_reason in NON_RETRYABLE_FAILURES:
         return {
             "should_retry": False,
@@ -84,7 +59,6 @@ def evaluate_transaction(transaction: dict) -> dict:
             "alternative_method": None,
         }
 
-    # ---- Rule 2: Check max retry attempts ----
     if retry_count >= settings.MAX_RETRY_ATTEMPTS:
         return {
             "should_retry": False,
@@ -95,7 +69,6 @@ def evaluate_transaction(transaction: dict) -> dict:
             "alternative_method": ALT_PAYMENT_CANDIDATES.get(failure_reason),
         }
 
-    # ---- ML Prediction ----
     if _ml_available:
         try:
             prediction = predict_retry_success(transaction)
@@ -115,7 +88,6 @@ def evaluate_transaction(transaction: dict) -> dict:
         recommended_action = "smart_retry" if retry_score > 0.5 else "notification"
         optimal_retry_hour = 10
 
-    # ---- Determine retry timing ----
     retry_windows = RETRY_WINDOWS.get(failure_reason, [2, 12, 24])
     next_window_index = min(retry_count, len(retry_windows) - 1)
     hours_until_retry = retry_windows[next_window_index]
@@ -123,7 +95,6 @@ def evaluate_transaction(transaction: dict) -> dict:
     now = datetime.now()
     optimal_retry_time = now + timedelta(hours=hours_until_retry)
 
-    # Adjust to optimal hour if the window allows
     if hours_until_retry >= 4:
         optimal_retry_time = optimal_retry_time.replace(
             hour=optimal_retry_hour, minute=0, second=0
@@ -131,7 +102,6 @@ def evaluate_transaction(transaction: dict) -> dict:
         if optimal_retry_time < now:
             optimal_retry_time += timedelta(days=1)
 
-    # ---- Build result ----
     should_retry = retry_score >= settings.MEDIUM_CONFIDENCE_THRESHOLD
 
     return {
@@ -146,7 +116,6 @@ def evaluate_transaction(transaction: dict) -> dict:
         "alternative_method": ALT_PAYMENT_CANDIDATES.get(failure_reason),
         "reason": _get_human_readable_reason(retry_score, failure_reason, confidence),
     }
-
 
 def schedule_retry(transaction_id: str, evaluation: dict) -> dict:
     """
@@ -167,7 +136,6 @@ def schedule_retry(transaction_id: str, evaluation: dict) -> dict:
     with get_db_connection() as conn:
         cursor = conn.cursor()
 
-        # Insert retry attempt
         cursor.execute("""
             INSERT INTO retry_attempts
             (id, transaction_id, attempt_number, retry_score, scheduled_time, status, created_at)
@@ -181,7 +149,6 @@ def schedule_retry(transaction_id: str, evaluation: dict) -> dict:
             datetime.now().isoformat()
         ))
 
-        # Update transaction with retry score
         cursor.execute("""
             UPDATE transactions
             SET retry_score = ?, optimal_retry_time = ?, updated_at = ?
@@ -204,7 +171,6 @@ def schedule_retry(transaction_id: str, evaluation: dict) -> dict:
         "attempt_number": evaluation["attempt_number"],
     }
 
-
 def simulate_retry_execution(transaction_id: str, retry_id: str) -> dict:
     """
     Simulate executing a retry (for demo purposes).
@@ -217,7 +183,6 @@ def simulate_retry_execution(transaction_id: str, retry_id: str) -> dict:
     with get_db_connection() as conn:
         cursor = conn.cursor()
 
-        # Get retry details
         cursor.execute("SELECT retry_score FROM retry_attempts WHERE id = ?", (retry_id,))
         retry = cursor.fetchone()
         if not retry:
@@ -225,10 +190,8 @@ def simulate_retry_execution(transaction_id: str, retry_id: str) -> dict:
 
         retry_score = retry["retry_score"]
 
-        # Simulate: succeed based on the predicted probability
         success = random.random() < retry_score
 
-        # Update retry attempt
         cursor.execute("""
             UPDATE retry_attempts
             SET status = ?, attempted_time = ?
@@ -239,7 +202,6 @@ def simulate_retry_execution(transaction_id: str, retry_id: str) -> dict:
             retry_id
         ))
 
-        # Update transaction status if successful
         if success:
             cursor.execute("""
                 UPDATE transactions
@@ -257,13 +219,11 @@ def simulate_retry_execution(transaction_id: str, retry_id: str) -> dict:
         "retry_score": retry_score,
     }
 
-
 def _rule_based_score(transaction: dict) -> float:
     """Fallback scoring when ML model is not available."""
     failure_reason = transaction.get("failure_reason", "unknown")
     retry_count = transaction.get("retry_count", 0)
 
-    # Base scores by failure reason
     base_scores = {
         "network_timeout": 0.80,
         "bank_server_down": 0.72,
@@ -278,11 +238,9 @@ def _rule_based_score(transaction: dict) -> float:
 
     score = base_scores.get(failure_reason, 0.30)
 
-    # Reduce score with each retry attempt (diminishing returns)
     score *= (0.85 ** retry_count)
 
     return round(min(max(score, 0.0), 1.0), 4)
-
 
 def _get_human_readable_reason(score: float, failure_reason: str, confidence: str) -> str:
     """Generate a human-readable explanation of the retry decision."""

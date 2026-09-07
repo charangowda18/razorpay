@@ -1,14 +1,3 @@
-"""
-Synthetic Payment Data Generator
-Generates realistic failed and successful payment transactions for training and demo.
-
-Design decisions:
-- 70% success / 30% failure ratio (realistic for Indian payment ecosystem)
-- Failure reasons weighted by real-world frequency
-- Time patterns simulate real payment behavior (more transactions during business hours)
-- Bank distribution matches Indian market share
-"""
-
 import uuid
 import random
 import sqlite3
@@ -16,13 +5,8 @@ import os
 import sys
 from datetime import datetime, timedelta
 
-# Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from database import init_database, get_db_connection
-
-# ============================================================
-# CONFIGURATION — Realistic Indian payment ecosystem data
-# ============================================================
 
 MERCHANTS = [
     {"name": "FreshBasket Groceries", "business_type": "grocery", "email": "ops@freshbasket.in"},
@@ -37,7 +21,6 @@ MERCHANTS = [
     {"name": "MediCare Pharmacy", "business_type": "healthcare", "email": "billing@medicare.in"},
 ]
 
-# Failure reasons with realistic weights and retry-friendliness
 FAILURE_REASONS = {
     "insufficient_funds": {"weight": 0.25, "retry_success_rate": 0.45, "code": "ERR_INSUFFICIENT_FUNDS"},
     "bank_server_down": {"weight": 0.18, "retry_success_rate": 0.72, "code": "ERR_BANK_SERVER"},
@@ -51,10 +34,10 @@ FAILURE_REASONS = {
 }
 
 PAYMENT_METHODS = {
-    "upi": 0.42,        # UPI dominates in India
-    "card": 0.28,       # Credit/Debit cards
-    "netbanking": 0.18, # Net banking
-    "wallet": 0.12,     # Digital wallets
+    "upi": 0.42,
+    "card": 0.28,
+    "netbanking": 0.18,
+    "wallet": 0.12,
 }
 
 BANKS = {
@@ -66,7 +49,6 @@ BANKS = {
 CARD_NETWORKS = ["Visa", "Mastercard", "RuPay", "Amex"]
 CARD_NETWORK_WEIGHTS = [0.35, 0.30, 0.30, 0.05]
 
-# Amount ranges by business type
 AMOUNT_RANGES = {
     "grocery": (150, 5000),
     "fashion": (500, 15000),
@@ -80,13 +62,11 @@ AMOUNT_RANGES = {
     "healthcare": (200, 10000),
 }
 
-
 def weighted_choice(options_dict):
     """Select a random item based on weights."""
     items = list(options_dict.keys())
     weights = [options_dict[k] if isinstance(options_dict[k], (int, float)) else options_dict[k]["weight"] for k in items]
     return random.choices(items, weights=weights, k=1)[0]
-
 
 def generate_email():
     """Generate a random customer email."""
@@ -96,11 +76,9 @@ def generate_email():
              "swati", "deepak", "kavita", "mohan", "ritu"]
     return f"{random.choice(names)}{random.randint(10, 999)}@{random.choice(providers)}"
 
-
 def generate_phone():
     """Generate a random Indian phone number."""
     return f"+91{random.randint(7000000000, 9999999999)}"
-
 
 def generate_transaction_time(days_back=90):
     """
@@ -111,19 +89,17 @@ def generate_transaction_time(days_back=90):
     day_offset = random.randint(0, days_back)
     base_date = now - timedelta(days=day_offset)
 
-    # Weighted hour distribution — peak during 10 AM - 9 PM
     hour_weights = [
-        1, 1, 0.5, 0.5, 0.5, 1,     # 12 AM - 5 AM (low)
-        2, 3, 5, 7, 8, 9,             # 6 AM - 11 AM (rising)
-        10, 9, 8, 7, 6, 7,            # 12 PM - 5 PM (afternoon)
-        8, 9, 10, 8, 5, 3,            # 6 PM - 11 PM (evening peak then drop)
+        1, 1, 0.5, 0.5, 0.5, 1,
+        2, 3, 5, 7, 8, 9,
+        10, 9, 8, 7, 6, 7,
+        8, 9, 10, 8, 5, 3,
     ]
     hour = random.choices(range(24), weights=hour_weights, k=1)[0]
     minute = random.randint(0, 59)
     second = random.randint(0, 59)
 
     return base_date.replace(hour=hour, minute=minute, second=second)
-
 
 def should_transaction_fail(payment_method, bank, hour, amount):
     """
@@ -134,26 +110,21 @@ def should_transaction_fail(payment_method, bank, hour, amount):
     Card-specific failures (card_expired, card_declined, invalid_card_number)
     only apply to card payments. UPI/netbanking/wallet get relevant failures.
     """
-    # Base failure rate: 30%
     base_failure_rate = 0.30
 
-    # Adjust by payment method
     method_adjustment = {
-        "upi": -0.05,       # UPI is more reliable
+        "upi": -0.05,
         "card": 0.02,
-        "netbanking": 0.05, # Netbanking has more issues
+        "netbanking": 0.05,
         "wallet": -0.03,
     }
 
-    # Adjust by bank (some banks are less reliable)
     bank_adjustment = {
         "SBI": 0.03, "PNB": 0.05, "BOB": 0.04, "Yes Bank": 0.06,
     }
 
-    # Adjust by time (late night has more failures)
     time_adjustment = 0.08 if hour < 6 or hour > 22 else 0
 
-    # Adjust by amount (higher amounts fail more)
     amount_adjustment = 0.05 if amount > 20000 else 0
 
     final_rate = (
@@ -165,13 +136,10 @@ def should_transaction_fail(payment_method, bank, hour, amount):
     )
 
     if random.random() < final_rate:
-        # Payment-method-aware failure reasons
         failure_reason = _get_failure_reason_for_method(payment_method)
         return True, failure_reason
     return False, None
 
-
-# Failure reasons mapped to valid payment methods
 METHOD_FAILURE_REASONS = {
     "card": {
         "insufficient_funds": 0.22,
@@ -209,12 +177,10 @@ METHOD_FAILURE_REASONS = {
     },
 }
 
-
 def _get_failure_reason_for_method(payment_method):
     """Pick a failure reason that's valid for the given payment method."""
     reasons = METHOD_FAILURE_REASONS.get(payment_method, METHOD_FAILURE_REASONS["card"])
     return weighted_choice(reasons)
-
 
 def determine_recovery_status(failure_reason, created_at):
     """
@@ -224,14 +190,12 @@ def determine_recovery_status(failure_reason, created_at):
     days_ago = (datetime.now() - created_at).days
     base_recovery = FAILURE_REASONS[failure_reason]["retry_success_rate"]
 
-    # Older transactions had more time to be recovered
     time_bonus = min(0.15, days_ago * 0.002)
     recovery_rate = base_recovery + time_bonus
 
     if random.random() < recovery_rate:
         return "recovered"
     return "failed"
-
 
 def generate_data(num_transactions=1500):
     """Generate synthetic payment data and populate the database."""
@@ -242,7 +206,6 @@ def generate_data(num_transactions=1500):
     with get_db_connection() as conn:
         cursor = conn.cursor()
 
-        # ---- Generate Merchants ----
         print("🏪 Generating merchants...")
         merchant_ids = []
         for merchant in MERCHANTS:
@@ -255,7 +218,6 @@ def generate_data(num_transactions=1500):
             )
         print(f"   ✅ {len(MERCHANTS)} merchants created")
 
-        # ---- Generate Transactions ----
         print(f"💳 Generating {num_transactions} transactions...")
         success_count = 0
         failed_count = 0
@@ -267,7 +229,6 @@ def generate_data(num_transactions=1500):
             merchant_id = merchant["id"]
             business_type = merchant["business_type"]
 
-            # Generate realistic amount based on business type
             amount_range = AMOUNT_RANGES.get(business_type, (100, 10000))
             amount = round(random.uniform(*amount_range), 2)
 
@@ -278,13 +239,11 @@ def generate_data(num_transactions=1500):
             customer_email = generate_email()
             customer_phone = generate_phone()
 
-            # Determine if the transaction fails
             should_fail, failure_reason = should_transaction_fail(
                 payment_method, bank, created_at.hour, amount
             )
 
             if should_fail:
-                # Check if it was eventually recovered
                 status = determine_recovery_status(failure_reason, created_at)
                 failure_code = FAILURE_REASONS[failure_reason]["code"]
 
@@ -313,7 +272,6 @@ def generate_data(num_transactions=1500):
                 retry_eligible, created_at.isoformat(), created_at.isoformat()
             ))
 
-            # For recovered/failed transactions, generate retry attempts
             if should_fail and failure_reason not in ("card_expired", "invalid_card_number", "fraud_suspected"):
                 num_retries = random.randint(1, 4)
                 for attempt in range(1, num_retries + 1):
@@ -324,7 +282,6 @@ def generate_data(num_transactions=1500):
                     )
                     retry_score = round(random.uniform(0.1, 0.95), 3)
 
-                    # Last attempt matches the final status
                     if attempt == num_retries:
                         retry_status = "success" if status == "recovered" else "failed"
                     else:
@@ -341,13 +298,11 @@ def generate_data(num_transactions=1500):
                         retry_status, retry_time.isoformat()
                     ))
 
-            # Progress indicator
             if (i + 1) % 500 == 0:
                 print(f"   ... {i + 1}/{num_transactions} transactions generated")
 
         conn.commit()
 
-        # ---- Summary ----
         print("\n" + "=" * 50)
         print("📊 DATA GENERATION SUMMARY")
         print("=" * 50)
@@ -357,7 +312,6 @@ def generate_data(num_transactions=1500):
         print(f"   🔄 Recovered:       {recovered_count} ({100*recovered_count/num_transactions:.1f}%)")
         print(f"   📈 Recovery rate:   {100*recovered_count/(failed_count+recovered_count):.1f}% of failures recovered")
 
-        # Revenue summary
         cursor.execute("SELECT SUM(amount) FROM transactions WHERE status = 'failed'")
         failed_revenue = cursor.fetchone()[0] or 0
         cursor.execute("SELECT SUM(amount) FROM transactions WHERE status = 'recovered'")
@@ -371,7 +325,6 @@ def generate_data(num_transactions=1500):
         print(f"   Recovered revenue:  ₹{recovered_revenue:,.2f}")
         print(f"   Still lost:         ₹{failed_revenue:,.2f}")
         print(f"   Recovery potential:  ₹{failed_revenue * 0.6:,.2f} (estimated)")
-
 
 if __name__ == "__main__":
     generate_data(1500)

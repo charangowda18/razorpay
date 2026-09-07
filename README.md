@@ -105,30 +105,18 @@ Merchants lose **3-7% of revenue** due to payment failures. Most failures are re
 
 ### Setup
 
-```bash
-# 1. Clone the repository
-git clone https://github.com/charangowda18/razorpay.git
-cd razorpay
-
-# 2. Install dependencies
-pip install -r requirements.txt
-
-# 3. Configure environment
-cp .env.example .env
-# Edit .env and add your GEMINI_API_KEY
-
-# 4. Generate synthetic data
-python backend/data/generate_data.py
-
-# 5. Train the ML model
-python backend/ml/train_model.py
-
-# 6. Start the server
-python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
-
-# 7. Open the dashboard
-# Visit http://localhost:8000
-```
+1. Clone this repository and open the project folder
+2. Install dependencies: `pip install -r requirements.txt`
+3. Create a `.env` file in the root folder and add your Gemini API key:
+   ```
+   GEMINI_API_KEY=your_api_key_here
+   GEMINI_MODEL=gemini-2.0-flash
+   ```
+   (Get a free key from [aistudio.google.com](https://aistudio.google.com/apikey))
+4. Generate synthetic data: `python backend/data/generate_data.py`
+5. Train the ML model: `python backend/ml/train_model.py`
+6. Start the server: `python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload`
+7. The dashboard will auto-open in your browser at `http://localhost:8000`
 
 ---
 
